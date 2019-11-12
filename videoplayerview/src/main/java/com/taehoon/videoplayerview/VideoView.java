@@ -2,10 +2,12 @@ package com.taehoon.videoplayerview;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.transition.TransitionManager;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
@@ -14,8 +16,12 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
+import androidx.transition.Slide;
+import androidx.transition.Transition;
+import androidx.transition.TransitionValues;
 
 import java.lang.ref.WeakReference;
 import java.text.DateFormat;
@@ -23,27 +29,17 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class VideoView extends ConstraintLayout
         implements TextureView.SurfaceTextureListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
 
     private final Context mContext;
+    PlaySpeedBottomSheetDialog dialogFragment;
     private MediaPlayerHolder mMediaPlayerHolder;
     private PlayTimeTextHandler mPlayTImeTextHandler = new PlayTimeTextHandler(this);
     private Handler mControllerHandler = new Handler();
-    private Runnable mControllerHideTask = new Runnable() {
-        @Override
-        public void run() {
-            hideMediaController();
-        }
-    };
-
     // View components
-    private ConstraintLayout mClContainer, mClController;
+    private ConstraintLayout mClContainer;
     private TextureView mTextureViewVideo;
     private TextView mTvTotalPlayTime, mTvCurrentPlayTime, mTvPlaySpeed;
     private ImageView mIvTogglePlayPause, mIvFastRewind, mIvFastForward, mIvReplay;
@@ -51,6 +47,12 @@ public class VideoView extends ConstraintLayout
 
     private boolean isPlayingBeforeTracking;
     private boolean isControllerShow = false;
+    private Runnable mControllerHideTask = new Runnable() {
+        @Override
+        public void run() {
+            hideMediaController();
+        }
+    };
 
     public VideoView(Context context) {
         super(context);
@@ -77,10 +79,10 @@ public class VideoView extends ConstraintLayout
     }
 
     private void initView() {
-        View mViewContainer = LayoutInflater.from(mContext).inflate(R.layout.view_video_controller_hide, VideoView.this, true);
+        Log.d("TAG", "Video View : initView()");
+        View mViewContainer = LayoutInflater.from(mContext).inflate(R.layout.view_video, VideoView.this, true);
 
         mClContainer = mViewContainer.findViewById(R.id.cl_container);
-        mClController = mViewContainer.findViewById(R.id.cl_controller);
         mTextureViewVideo = mViewContainer.findViewById(R.id.texture_view_video);
         mTvTotalPlayTime = mViewContainer.findViewById(R.id.tv_total_play_time);
         mTvCurrentPlayTime = mViewContainer.findViewById(R.id.tv_current_play_time);
@@ -90,13 +92,18 @@ public class VideoView extends ConstraintLayout
         mIvFastForward = mViewContainer.findViewById(R.id.iv_forward);
         mIvReplay = mViewContainer.findViewById(R.id.iv_replay);
         mSbProgress = mViewContainer.findViewById(R.id.sb_progress);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            mTvPlaySpeed.setVisibility(GONE);
+        }
     }
 
     private void setListener() {
+        Log.d("TAG", "Video View : setListener()");
         mTextureViewVideo.setSurfaceTextureListener(this);
         mSbProgress.setOnSeekBarChangeListener(this);
         mTextureViewVideo.setOnClickListener(this);
-        mTvCurrentPlayTime.setOnClickListener(this);
+        mTvPlaySpeed.setOnClickListener(this);
         mIvTogglePlayPause.setOnClickListener(this);
         mIvFastRewind.setOnClickListener(this);
         mIvFastForward.setOnClickListener(this);
@@ -104,8 +111,10 @@ public class VideoView extends ConstraintLayout
     }
 
     private void initMediaPlayerHolder() {
+        Log.d("TAG", "Video View : initMediaPlayerHolder()");
         mMediaPlayerHolder = new MediaPlayerHolder(mContext);
         mMediaPlayerHolder.setPlaybackInfoListener(new PlaybackListener());
+        mMediaPlayerHolder.initMediaPlayer();
     }
 
     @Override
@@ -115,22 +124,31 @@ public class VideoView extends ConstraintLayout
             toggleController();
         } else if (id == R.id.iv_toggle_play_pause) {
             togglePlayPause();
-            extensionMediaControllerTime();
+            hideMediaControllerDelayed();
         } else if (id == R.id.iv_rewind) {
             fastRewind();
-            extensionMediaControllerTime();
+            hideMediaControllerDelayed();
         } else if (id == R.id.iv_forward) {
             fastForward();
-            extensionMediaControllerTime();
-        } else if (id == R.id.tv_play_speed) {
-
+            hideMediaControllerDelayed();
         } else if (id == R.id.iv_replay) {
             replay();
+        } else if (id == R.id.tv_play_speed) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                dialogFragment = new PlaySpeedBottomSheetDialog(mContext, mMediaPlayerHolder.getPlaySpeed(), this);
+                dialogFragment.show();
+            }
+        } else if (id == R.id.cl_item_play_speed_container) {
+            float playSpeed = (float) v.getTag();
+            if (mMediaPlayerHolder != null) {
+                mMediaPlayerHolder.playSpeedChange(playSpeed);
+            }
+            dialogFragment.dismiss();
         }
     }
 
     private void toggleController() {
-        if(isControllerShow) {
+        if (isControllerShow) {
             hideMediaController();
         } else {
             showMediaController();
@@ -143,16 +161,14 @@ public class VideoView extends ConstraintLayout
         mControllerHandler.postDelayed(mControllerHideTask, 3000);
     }
 
-    private void extensionMediaControllerTime() {
-        mControllerHandler.removeCallbacks(mControllerHideTask);
-        mControllerHandler.postDelayed(mControllerHideTask, 3000);
-    }
-
     private void showMediaController() {
         isControllerShow = true;
         ConstraintSet constraintSet = new ConstraintSet();
-        constraintSet.clone(mContext, R.layout.view_video_controller_show);
+        constraintSet.clone(mContext, R.layout.view_video);
+        constraintSet.connect(R.id.cl_controller, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
+        constraintSet.connect(R.id.cl_controller, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
         constraintSet.setVisibility(mIvReplay.getId(), mIvReplay.getVisibility());
+        constraintSet.setVisibility(mTvPlaySpeed.getId(), mTvPlaySpeed.getVisibility());
         TransitionManager.beginDelayedTransition(mClContainer);
         constraintSet.applyTo(mClContainer);
     }
@@ -160,8 +176,10 @@ public class VideoView extends ConstraintLayout
     private void hideMediaController() {
         isControllerShow = false;
         ConstraintSet constraintSet = new ConstraintSet();
-        constraintSet.clone(mContext, R.layout.view_video_controller_hide);
+        constraintSet.clone(mContext, R.layout.view_video);
+        constraintSet.connect(R.id.cl_controller, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
         constraintSet.setVisibility(mIvReplay.getId(), mIvReplay.getVisibility());
+        constraintSet.setVisibility(mTvPlaySpeed.getId(), mTvPlaySpeed.getVisibility());
         TransitionManager.beginDelayedTransition(mClContainer);
         constraintSet.applyTo(mClContainer);
     }
@@ -208,6 +226,7 @@ public class VideoView extends ConstraintLayout
         if (mMediaPlayerHolder.isPlaying()) {
             mMediaPlayerHolder.pause();
         }
+        mControllerHandler.removeCallbacks(mControllerHideTask);
     }
 
     @Override
@@ -215,6 +234,7 @@ public class VideoView extends ConstraintLayout
         if (isPlayingBeforeTracking) {
             mMediaPlayerHolder.play();
         }
+        hideMediaControllerDelayed();
     }
 
     private void setCurrentPlayTimeText(int progress) {
@@ -226,28 +246,57 @@ public class VideoView extends ConstraintLayout
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
+        Log.d("TAG", "Video View : onSurfaceTextureAvailable()");
         Surface surface = new Surface(surfaceTexture);
-        mMediaPlayerHolder.initMediaPlayer(surface);
-        mMediaPlayerHolder.loadMedia(R.raw.wolf);
+        mMediaPlayerHolder.setSurface(surface);
     }
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
+        Log.d("TAG", "Video View : onSurfaceTextureSizeChanged()");
     }
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-        if (mMediaPlayerHolder != null) {
-            mMediaPlayerHolder.release();
-            mMediaPlayerHolder = null;
-        }
+        Log.d("TAG", "Video View : onSurfaceTextureDestroyed()");
         return false;
     }
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 
+    }
+
+    public void loadMedia(int resId) {
+        mMediaPlayerHolder.loadMedia(resId);
+    }
+
+    public void releaseMedia() {
+        if (mMediaPlayerHolder != null) {
+            mMediaPlayerHolder.release();
+            mMediaPlayerHolder = null;
+        }
+    }
+
+    private static final class PlayTimeTextHandler extends Handler {
+
+        private final WeakReference<VideoView> reference;
+
+        private PlayTimeTextHandler(VideoView videoView) {
+            this.reference = new WeakReference<>(videoView);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            VideoView videoView = reference.get();
+            if (videoView != null) {
+                int progress = msg.arg1;
+                DateFormat format = new SimpleDateFormat("mm:ss", Locale.getDefault());
+                format.setTimeZone(TimeZone.getTimeZone("UTC"));
+                String currentPlayTime = format.format(new Date(progress));
+                videoView.mTvCurrentPlayTime.setText(currentPlayTime);
+            }
+        }
     }
 
     private class PlaybackListener extends PlaybackInfoListener {
@@ -297,27 +346,6 @@ public class VideoView extends ConstraintLayout
         @Override
         public void onPlaybackCompleted() {
             super.onPlaybackCompleted();
-        }
-    }
-
-    private class PlayTimeTextHandler extends Handler {
-
-        private final WeakReference<VideoView> reference;
-
-        public PlayTimeTextHandler(VideoView videoView) {
-            this.reference = new WeakReference<>(videoView);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            VideoView videoView = reference.get();
-            if (videoView != null) {
-                int progress = msg.arg1;
-                DateFormat format = new SimpleDateFormat("mm:ss", Locale.getDefault());
-                format.setTimeZone(TimeZone.getTimeZone("UTC"));
-                String currentPlayTime = format.format(new Date(progress));
-                mTvCurrentPlayTime.setText(currentPlayTime);
-            }
         }
     }
 }

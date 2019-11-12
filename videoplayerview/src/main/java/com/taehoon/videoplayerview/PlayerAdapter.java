@@ -17,5 +17,7 @@ public interface PlayerAdapter {
 
     void seekTo(int position);
 
+    void playSpeedChange(float speed);
+
     void initProgressCallback();
 }

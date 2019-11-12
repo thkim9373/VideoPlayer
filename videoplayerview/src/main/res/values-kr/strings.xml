@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">VideoPlayerView</string>
-    <string name="play_speed">Speed</string>
+    <string name="play_speed">재생 속도</string>
     <string name="three_seconds">3s</string>
 </resources>

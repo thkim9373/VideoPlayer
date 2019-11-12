@@ -1,8 +1,11 @@
 package com.taehoon.videoplayerview;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.media.MediaPlayer;
+import android.media.PlaybackParams;
 import android.net.Uri;
+import android.os.Build;
 import android.util.Log;
 import android.view.Surface;
 
@@ -12,23 +15,21 @@ import java.util.concurrent.TimeUnit;
 
 public class MediaPlayerHolder implements PlayerAdapter {
 
-    public static final int PLAYBACK_POSITION_REFRESH_INTERVAL_MS = 500;
+    private static final int PLAYBACK_POSITION_REFRESH_INTERVAL_MS = 500;
 
     private final Context mContext;
     private MediaPlayer mMediaPlayer;
-    private int resId;
     private PlaybackInfoListener mPlaybackInfoListener;
     private ScheduledExecutorService mExecutor;
     private Runnable mSeekbarPositionUpdateTask;
 
-    public MediaPlayerHolder(Context context) {
+    MediaPlayerHolder(Context context) {
         this.mContext = context;
     }
 
-    public void initMediaPlayer(Surface surface) {
+    void initMediaPlayer() {
         if (mMediaPlayer == null) {
             mMediaPlayer = new MediaPlayer();
-            mMediaPlayer.setSurface(surface);
             mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
@@ -42,8 +43,22 @@ public class MediaPlayerHolder implements PlayerAdapter {
         }
     }
 
-    public void setPlaybackInfoListener(PlaybackInfoListener listener) {
+    void setSurface(Surface surface) {
+        if (mMediaPlayer != null) {
+            mMediaPlayer.setSurface(surface);
+        }
+    }
+
+    void setPlaybackInfoListener(PlaybackInfoListener listener) {
         this.mPlaybackInfoListener = listener;
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    float getPlaySpeed() {
+        if (mMediaPlayer != null) {
+            return mMediaPlayer.getPlaybackParams().getSpeed();
+        }
+        return -1;
     }
 
     @Override
@@ -56,16 +71,15 @@ public class MediaPlayerHolder implements PlayerAdapter {
             Log.d("TAG", e.toString());
         }
 
-        mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-            @Override
-            public void onPrepared(MediaPlayer mediaPlayer) {
-                initProgressCallback();
-                startUpdatingCallbackWithPosition();
-                play();
-            }
-        });
-
         try {
+            mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mediaPlayer) {
+                    initProgressCallback();
+                    startUpdatingCallbackWithPosition();
+                    play();
+                }
+            });
             mMediaPlayer.prepareAsync();
         } catch (Exception e) {
             Log.d("TAG", e.toString());
@@ -74,7 +88,7 @@ public class MediaPlayerHolder implements PlayerAdapter {
 
     @Override
     public void release() {
-        if(mMediaPlayer != null) {
+        if (mMediaPlayer != null) {
             mMediaPlayer.release();
             mMediaPlayer = null;
         }
@@ -82,7 +96,7 @@ public class MediaPlayerHolder implements PlayerAdapter {
 
     @Override
     public boolean isPlaying() {
-        if(mMediaPlayer != null) {
+        if (mMediaPlayer != null) {
             return mMediaPlayer.isPlaying();
         }
         return false;
@@ -90,10 +104,10 @@ public class MediaPlayerHolder implements PlayerAdapter {
 
     @Override
     public void play() {
-        if(mMediaPlayer != null) {
+        if (mMediaPlayer != null) {
             mMediaPlayer.start();
             startUpdatingCallbackWithPosition();
-            if(mPlaybackInfoListener != null) {
+            if (mPlaybackInfoListener != null) {
                 mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.PLAYING);
             }
         }
@@ -101,10 +115,10 @@ public class MediaPlayerHolder implements PlayerAdapter {
 
     @Override
     public void pause() {
-        if(mMediaPlayer != null) {
+        if (mMediaPlayer != null) {
             mMediaPlayer.pause();
             stopUpdatingCallbackWithPosition();
-            if(mPlaybackInfoListener != null) {
+            if (mPlaybackInfoListener != null) {
                 mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.PAUSED);
             }
         }
@@ -112,9 +126,9 @@ public class MediaPlayerHolder implements PlayerAdapter {
 
     @Override
     public void fastRewind() {
-        if(mMediaPlayer != null) {
+        if (mMediaPlayer != null) {
             mMediaPlayer.seekTo(mMediaPlayer.getCurrentPosition() - 3000);
-            if(mPlaybackInfoListener != null) {
+            if (mPlaybackInfoListener != null) {
                 mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.FAST_REWEIND);
             }
         }
@@ -122,16 +136,16 @@ public class MediaPlayerHolder implements PlayerAdapter {
 
     @Override
     public void fastForward() {
-        if(mMediaPlayer != null) {
+        if (mMediaPlayer != null) {
             mMediaPlayer.seekTo(mMediaPlayer.getCurrentPosition() + 3000);
-            if(mPlaybackInfoListener != null) {
+            if (mPlaybackInfoListener != null) {
                 mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.FAST_FORWARD);
             }
         }
     }
 
     int getCurrentPosition() {
-        if(mMediaPlayer != null) {
+        if (mMediaPlayer != null) {
             return mMediaPlayer.getCurrentPosition();
         }
         return -1;
@@ -139,8 +153,18 @@ public class MediaPlayerHolder implements PlayerAdapter {
 
     @Override
     public void seekTo(int position) {
-        if(mMediaPlayer != null) {
+        if (mMediaPlayer != null) {
             mMediaPlayer.seekTo(position);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    @Override
+    public void playSpeedChange(float speed) {
+        if (mMediaPlayer != null) {
+            PlaybackParams params = new PlaybackParams();
+            params.setSpeed(speed);
+            mMediaPlayer.setPlaybackParams(params);
         }
     }
 
