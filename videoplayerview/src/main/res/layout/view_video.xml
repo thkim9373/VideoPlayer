@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/cl_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:ignore="ContentDescription">
 
     <TextureView
         android:id="@+id/texture_view_video"
@@ -26,6 +27,7 @@
         app:layout_constraintTop_toBottomOf="parent"
         app:layout_constraintVertical_bias="1">
 
+
         <ImageView
             android:id="@+id/iv_toggle_play_pause"
             android:layout_width="wrap_content"
@@ -40,9 +42,9 @@
             android:id="@+id/iv_rewind"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="24dp"
+            android:layout_marginEnd="30dp"
             android:src="@drawable/fast_rewind"
-            app:layout_constraintBottom_toTopOf="@id/tv_rewind"
+            app:layout_constraintBottom_toBottomOf="@id/iv_toggle_play_pause"
             app:layout_constraintEnd_toStartOf="@id/iv_toggle_play_pause"
             app:layout_constraintTop_toTopOf="@id/iv_toggle_play_pause"
             app:layout_constraintVertical_chainStyle="packed" />
@@ -53,7 +55,6 @@
             android:layout_height="wrap_content"
             android:text="@string/three_seconds"
             android:textColor="#ffffff"
-            app:layout_constraintBottom_toBottomOf="@id/iv_toggle_play_pause"
             app:layout_constraintEnd_toEndOf="@id/iv_rewind"
             app:layout_constraintStart_toStartOf="@id/iv_rewind"
             app:layout_constraintTop_toBottomOf="@id/iv_rewind" />
@@ -62,9 +63,9 @@
             android:id="@+id/iv_forward"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
+            android:layout_marginStart="30dp"
             android:src="@drawable/fast_forward"
-            app:layout_constraintBottom_toTopOf="@id/tv_forward"
+            app:layout_constraintBottom_toBottomOf="@id/iv_toggle_play_pause"
             app:layout_constraintStart_toEndOf="@id/iv_toggle_play_pause"
             app:layout_constraintTop_toTopOf="@id/iv_toggle_play_pause"
             app:layout_constraintVertical_chainStyle="packed" />
@@ -75,7 +76,6 @@
             android:layout_height="wrap_content"
             android:text="@string/three_seconds"
             android:textColor="#ffffff"
-            app:layout_constraintBottom_toBottomOf="@id/iv_toggle_play_pause"
             app:layout_constraintEnd_toEndOf="@id/iv_forward"
             app:layout_constraintStart_toStartOf="@id/iv_forward"
             app:layout_constraintTop_toBottomOf="@id/iv_forward" />
@@ -96,7 +96,7 @@
             android:id="@+id/tv_current_play_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#ffffff"
+            android:textColor="?android:colorAccent"
             app:layout_constraintBottom_toBottomOf="@id/tv_total_play_time"
             app:layout_constraintEnd_toStartOf="@id/tv_total_play_time"
             app:layout_constraintTop_toTopOf="@id/tv_total_play_time"
@@ -112,6 +112,69 @@
             app:layout_constraintTop_toBottomOf="@id/sb_progress"
             tools:text="/0:00" />
 
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/cl_play_speed"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintBottom_toBottomOf="@id/iv_toggle_play_pause"
+            app:layout_constraintEnd_toEndOf="@id/tv_total_play_time"
+            app:layout_constraintHorizontal_bias="1"
+            app:layout_constraintStart_toEndOf="@id/iv_forward"
+            app:layout_constraintTop_toTopOf="@id/iv_toggle_play_pause"
+            app:layout_constraintWidth_percent="0.3">
+
+            <TextView
+                android:id="@+id/tv_play_speed_slow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/background_play_speed"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="@string/slow"
+                android:textColor="#ffffff"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/tv_play_speed_normal"
+                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                app:layout_constraintHorizontal_weight="1"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tv_play_speed_normal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/background_play_speed_select"
+                android:gravity="center"
+                android:padding="8dp"
+                android:singleLine="true"
+                android:text="@string/normal"
+                android:textColor="?android:colorAccent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/tv_play_speed_fast"
+                app:layout_constraintHorizontal_weight="1"
+                app:layout_constraintStart_toEndOf="@id/tv_play_speed_slow"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tv_play_speed_fast"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/background_play_speed"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="@string/fast"
+                android:textColor="#ffffff"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_weight="1"
+                app:layout_constraintStart_toEndOf="@id/tv_play_speed_normal"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
         <TextView
             android:id="@+id/tv_play_speed"
             android:layout_width="wrap_content"
@@ -124,15 +187,26 @@
             app:layout_constraintEnd_toEndOf="@id/tv_total_play_time"
             app:layout_constraintHorizontal_bias="1"
             app:layout_constraintStart_toEndOf="@id/iv_toggle_play_pause"
-            app:layout_constraintTop_toTopOf="@id/iv_toggle_play_pause" />
+            app:layout_constraintTop_toTopOf="@id/iv_toggle_play_pause"
+            tools:visibility="gone" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <ImageView
-        android:id="@+id/iv_replay"
+    <View
+        android:id="@+id/view_complete_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tv_replay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/replay"
+        android:text="@string/replay"
+        android:textColor="#ffffff"
+        android:drawableTop="@drawable/replay"
+        android:gravity="center"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/texture_view_video"
         app:layout_constraintEnd_toEndOf="@id/texture_view_video"

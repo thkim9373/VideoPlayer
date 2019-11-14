@@ -76,13 +76,20 @@ public class MediaPlayerHolder implements PlayerAdapter {
                 @Override
                 public void onPrepared(MediaPlayer mediaPlayer) {
                     initProgressCallback();
-                    startUpdatingCallbackWithPosition();
-                    play();
+                    if(mPlaybackInfoListener != null) {
+                        mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.PREPARED);
+                    }
                 }
             });
             mMediaPlayer.prepareAsync();
         } catch (Exception e) {
             Log.d("TAG", e.toString());
+        }
+    }
+
+    void showThumbnail() {
+        if(mMediaPlayer != null) {
+            mMediaPlayer.seekTo(1);
         }
     }
 
@@ -129,7 +136,7 @@ public class MediaPlayerHolder implements PlayerAdapter {
         if (mMediaPlayer != null) {
             mMediaPlayer.seekTo(mMediaPlayer.getCurrentPosition() - 3000);
             if (mPlaybackInfoListener != null) {
-                mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.FAST_REWEIND);
+                mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.FAST_REWIND);
             }
         }
     }
@@ -164,7 +171,13 @@ public class MediaPlayerHolder implements PlayerAdapter {
         if (mMediaPlayer != null) {
             PlaybackParams params = new PlaybackParams();
             params.setSpeed(speed);
-            mMediaPlayer.setPlaybackParams(params);
+
+            if(mMediaPlayer.isPlaying()) {
+                mMediaPlayer.setPlaybackParams(params);
+            } else {
+                mMediaPlayer.setPlaybackParams(params);
+                mMediaPlayer.pause();
+            }
         }
     }
 

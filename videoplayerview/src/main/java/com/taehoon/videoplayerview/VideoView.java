@@ -1,13 +1,17 @@
 package com.taehoon.videoplayerview;
 
+import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.transition.TransitionManager;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
@@ -16,12 +20,9 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
+import androidx.annotation.ColorInt;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
-import androidx.transition.Slide;
-import androidx.transition.Transition;
-import androidx.transition.TransitionValues;
 
 import java.lang.ref.WeakReference;
 import java.text.DateFormat;
@@ -30,8 +31,12 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+@SuppressWarnings("ALL")
 public class VideoView extends ConstraintLayout
         implements TextureView.SurfaceTextureListener, View.OnClickListener, SeekBar.OnSeekBarChangeListener {
+
+    public static final int MODE_BOTTOM_SHEET_FRAGMENT_DIALOG = 0;
+    public static final int MODE_BUTTON = 1;
 
     private final Context mContext;
     PlaySpeedBottomSheetDialog dialogFragment;
@@ -39,11 +44,13 @@ public class VideoView extends ConstraintLayout
     private PlayTimeTextHandler mPlayTImeTextHandler = new PlayTimeTextHandler(this);
     private Handler mControllerHandler = new Handler();
     // View components
-    private ConstraintLayout mClContainer;
+    private ConstraintLayout mClContainer, mClPlaySpeed;
     private TextureView mTextureViewVideo;
-    private TextView mTvTotalPlayTime, mTvCurrentPlayTime, mTvPlaySpeed;
-    private ImageView mIvTogglePlayPause, mIvFastRewind, mIvFastForward, mIvReplay;
+    private TextView mTvTotalPlayTime, mTvCurrentPlayTime, mTvPlaySpeed, mTvSlow, mTvNormal, mTvFast, mTvReplay;
+    private TextView[] mTvPlaySpeedArr = new TextView[3];
+    private ImageView mIvTogglePlayPause, mIvFastRewind, mIvFastForward;
     private SeekBar mSbProgress;
+    private View mViewCompleteBackground;
 
     private boolean isPlayingBeforeTracking;
     private boolean isControllerShow = false;
@@ -90,11 +97,24 @@ public class VideoView extends ConstraintLayout
         mIvTogglePlayPause = mViewContainer.findViewById(R.id.iv_toggle_play_pause);
         mIvFastRewind = mViewContainer.findViewById(R.id.iv_rewind);
         mIvFastForward = mViewContainer.findViewById(R.id.iv_forward);
-        mIvReplay = mViewContainer.findViewById(R.id.iv_replay);
         mSbProgress = mViewContainer.findViewById(R.id.sb_progress);
+
+        mTvReplay = mViewContainer.findViewById(R.id.tv_replay);
+        mViewCompleteBackground = mViewContainer.findViewById(R.id.view_complete_background);
+
+        mClPlaySpeed = mViewContainer.findViewById(R.id.cl_play_speed);
+        mTvSlow = mViewContainer.findViewById(R.id.tv_play_speed_slow);
+        mTvNormal = mViewContainer.findViewById(R.id.tv_play_speed_normal);
+        mTvFast = mViewContainer.findViewById(R.id.tv_play_speed_fast);
+        mTvPlaySpeedArr[0] = mTvSlow;
+        mTvPlaySpeedArr[1] = mTvNormal;
+        mTvPlaySpeedArr[2] = mTvFast;
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             mTvPlaySpeed.setVisibility(GONE);
+            mClPlaySpeed.setVisibility(GONE);
+        } else {
+            mClPlaySpeed.setVisibility(GONE);
         }
     }
 
@@ -107,7 +127,10 @@ public class VideoView extends ConstraintLayout
         mIvTogglePlayPause.setOnClickListener(this);
         mIvFastRewind.setOnClickListener(this);
         mIvFastForward.setOnClickListener(this);
-        mIvReplay.setOnClickListener(this);
+        mTvReplay.setOnClickListener(this);
+        mTvSlow.setOnClickListener(this);
+        mTvNormal.setOnClickListener(this);
+        mTvFast.setOnClickListener(this);
     }
 
     private void initMediaPlayerHolder() {
@@ -115,6 +138,27 @@ public class VideoView extends ConstraintLayout
         mMediaPlayerHolder = new MediaPlayerHolder(mContext);
         mMediaPlayerHolder.setPlaybackInfoListener(new PlaybackListener());
         mMediaPlayerHolder.initMediaPlayer();
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    public void setPlaySpeedMode(int mode) {
+        if (mode == MODE_BUTTON) {
+            mClPlaySpeed.setVisibility(VISIBLE);
+            mTvPlaySpeed.setVisibility(GONE);
+        } else {
+            mClPlaySpeed.setVisibility(GONE);
+            mTvPlaySpeed.setVisibility(VISIBLE);
+        }
+    }
+
+    public void setProgressBarBacground(int resId) {
+        Drawable drawable = mContext.getResources().getDrawable(resId, mContext.getTheme());
+        mSbProgress.setProgressDrawable(drawable);
+    }
+
+    public void setProgressBarThumb(int resId) {
+        Drawable drawable = mContext.getResources().getDrawable(resId, mContext.getTheme());
+        mSbProgress.setThumb(drawable);
     }
 
     @Override
@@ -131,7 +175,7 @@ public class VideoView extends ConstraintLayout
         } else if (id == R.id.iv_forward) {
             fastForward();
             hideMediaControllerDelayed();
-        } else if (id == R.id.iv_replay) {
+        } else if (id == R.id.tv_replay) {
             replay();
         } else if (id == R.id.tv_play_speed) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -144,6 +188,24 @@ public class VideoView extends ConstraintLayout
                 mMediaPlayerHolder.playSpeedChange(playSpeed);
             }
             dialogFragment.dismiss();
+        } else if (id == R.id.tv_play_speed_slow) {
+            if (mMediaPlayerHolder != null) {
+                mMediaPlayerHolder.playSpeedChange(0.5f);
+                checkPlaySpeed(id);
+                hideMediaControllerDelayed();
+            }
+        } else if (id == R.id.tv_play_speed_normal) {
+            if (mMediaPlayerHolder != null) {
+                mMediaPlayerHolder.playSpeedChange(1.0f);
+                checkPlaySpeed(id);
+                hideMediaControllerDelayed();
+            }
+        } else if (id == R.id.tv_play_speed_fast) {
+            if (mMediaPlayerHolder != null) {
+                mMediaPlayerHolder.playSpeedChange(1.5f);
+                checkPlaySpeed(id);
+                hideMediaControllerDelayed();
+            }
         }
     }
 
@@ -164,11 +226,9 @@ public class VideoView extends ConstraintLayout
     private void showMediaController() {
         isControllerShow = true;
         ConstraintSet constraintSet = new ConstraintSet();
-        constraintSet.clone(mContext, R.layout.view_video);
-        constraintSet.connect(R.id.cl_controller, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
+        constraintSet.clone(mClContainer);
+        constraintSet.clear(R.id.cl_controller, ConstraintSet.TOP);
         constraintSet.connect(R.id.cl_controller, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
-        constraintSet.setVisibility(mIvReplay.getId(), mIvReplay.getVisibility());
-        constraintSet.setVisibility(mTvPlaySpeed.getId(), mTvPlaySpeed.getVisibility());
         TransitionManager.beginDelayedTransition(mClContainer);
         constraintSet.applyTo(mClContainer);
     }
@@ -176,10 +236,9 @@ public class VideoView extends ConstraintLayout
     private void hideMediaController() {
         isControllerShow = false;
         ConstraintSet constraintSet = new ConstraintSet();
-        constraintSet.clone(mContext, R.layout.view_video);
+        constraintSet.clone(mClContainer);
+        constraintSet.clear(R.id.cl_controller, ConstraintSet.BOTTOM);
         constraintSet.connect(R.id.cl_controller, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
-        constraintSet.setVisibility(mIvReplay.getId(), mIvReplay.getVisibility());
-        constraintSet.setVisibility(mTvPlaySpeed.getId(), mTvPlaySpeed.getVisibility());
         TransitionManager.beginDelayedTransition(mClContainer);
         constraintSet.applyTo(mClContainer);
     }
@@ -209,6 +268,21 @@ public class VideoView extends ConstraintLayout
     private void replay() {
         if (mMediaPlayerHolder != null) {
             mMediaPlayerHolder.play();
+        }
+    }
+
+    private void checkPlaySpeed(int id) {
+        for (TextView textView : mTvPlaySpeedArr) {
+            if (textView.getId() == id) {
+                TypedValue TypedValue = new TypedValue();
+                mContext.getTheme().resolveAttribute(R.attr.colorAccent, TypedValue, true);
+                @ColorInt int color = TypedValue.data;
+                textView.setTextColor(color);
+                textView.setBackgroundResource(R.drawable.background_play_speed_select);
+            } else {
+                textView.setTextColor(Color.WHITE);
+                textView.setBackgroundResource(R.drawable.background_play_speed);
+            }
         }
     }
 
@@ -321,7 +395,8 @@ public class VideoView extends ConstraintLayout
         public void onStateChanged(int state) {
             switch (state) {
                 case State.COMPLETED:
-                    mIvReplay.setVisibility(VISIBLE);
+                    mTvReplay.setVisibility(VISIBLE);
+                    mViewCompleteBackground.setVisibility(VISIBLE);
                     mIvTogglePlayPause.setImageResource(R.drawable.play_arrow);
                     break;
                 case State.INVALID:
@@ -330,15 +405,21 @@ public class VideoView extends ConstraintLayout
                     mIvTogglePlayPause.setImageResource(R.drawable.play_arrow);
                     break;
                 case State.PLAYING:
-                    if (mIvReplay.getVisibility() == VISIBLE) {
-                        mIvReplay.setVisibility(GONE);
+                    if (mTvReplay.getVisibility() == VISIBLE) {
+                        mTvReplay.setVisibility(GONE);
+                    }
+                    if (mViewCompleteBackground.getVisibility() == VISIBLE) {
+                        mViewCompleteBackground.setVisibility(GONE);
                     }
                     mIvTogglePlayPause.setImageResource(R.drawable.pause);
                     break;
-                case State.FAST_REWEIND:
+                case State.FAST_REWIND:
                 case State.FAST_FORWARD:
                     mSbProgress.setProgress(mMediaPlayerHolder.getCurrentPosition());
                     setCurrentPlayTimeText(mSbProgress.getProgress());
+                    break;
+                case State.PREPARED:
+                    mMediaPlayerHolder.showThumbnail();
                     break;
             }
         }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="VideoView">
+        <attr name="colorTheme" format="color" />
+        <attr name="seekBar" format="reference" />
+    </declare-styleable>
+</resources>
