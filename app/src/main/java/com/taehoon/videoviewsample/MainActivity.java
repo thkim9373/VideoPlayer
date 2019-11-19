@@ -7,7 +7,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.taehoon.videoplayerview.VideoView;
+import com.taehoon.videoplayerview.ExoPlayer.VideoView;
 
 public class MainActivity extends AppCompatActivity {
 

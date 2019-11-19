@@ -1,4 +1,4 @@
-package com.taehoon.videoplayerview;
+package com.taehoon.videoplayerview.ExoPlayer;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.taehoon.videoplayerview.R;
 
 public class PlaySpeedBottomSheetDialog extends BottomSheetDialog {
 
