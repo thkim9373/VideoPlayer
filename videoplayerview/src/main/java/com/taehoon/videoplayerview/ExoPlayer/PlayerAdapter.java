@@ -1,7 +1,11 @@
 package com.taehoon.videoplayerview.ExoPlayer;
 
+import android.net.Uri;
+
 public interface PlayerAdapter {
     void loadMedia(int resId);
+
+    void loadMediaFromUri(Uri uri);
 
     void release();
 

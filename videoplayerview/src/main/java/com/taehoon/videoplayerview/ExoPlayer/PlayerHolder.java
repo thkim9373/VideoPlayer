@@ -1,6 +1,7 @@
 package com.taehoon.videoplayerview.ExoPlayer;
 
 import android.content.Context;
+import android.net.Uri;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ControlDispatcher;
@@ -48,7 +49,7 @@ public class PlayerHolder implements PlayerAdapter {
             mPlayer.addListener(new Player.EventListener() {
                 @Override
                 public void onLoadingChanged(boolean isLoading) {
-                    if(isLoading) {
+                    if (isLoading) {
                         initProgressCallback();
                     }
                 }
@@ -62,7 +63,7 @@ public class PlayerHolder implements PlayerAdapter {
                             break;
                         case STATE_BUFFERING:
                             if (mPlaybackInfoListener != null) {
-                                if(playWhenReady) {
+                                if (playWhenReady) {
                                     mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.PREPARED);
                                 } else {
                                     mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.BUFFERING);
@@ -70,7 +71,7 @@ public class PlayerHolder implements PlayerAdapter {
                             }
                             break;
                         case STATE_READY:
-                            if(playWhenReady) {
+                            if (playWhenReady) {
                                 startUpdatingCallbackWithPosition();
                                 if (mPlaybackInfoListener != null)
                                     mPlaybackInfoListener.onStateChanged(PlaybackInfoListener.State.PLAYING);
@@ -125,6 +126,22 @@ public class PlayerHolder implements PlayerAdapter {
                 new ProgressiveMediaSource
                         .Factory(dataSourceFactory)
                         .createMediaSource(RawResourceDataSource.buildRawResourceUri(resId));
+
+        mPlayer.prepare(videoSource);
+        mPlayer.setPlayWhenReady(true);
+    }
+
+    @Override
+    public void loadMediaFromUri(Uri uri) {
+        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(
+                mContext,
+                Util.getUserAgent(mContext, mContext.getString(R.string.app_name))
+        );
+
+        MediaSource videoSource =
+                new ProgressiveMediaSource
+                        .Factory(dataSourceFactory)
+                        .createMediaSource(uri);
 
         mPlayer.prepare(videoSource);
         mPlayer.setPlayWhenReady(true);
@@ -215,7 +232,7 @@ public class PlayerHolder implements PlayerAdapter {
 
     @Override
     public void replay() {
-        if(mPlayer != null) {
+        if (mPlayer != null) {
             mPlayer.seekTo(0);
             mPlayer.setPlayWhenReady(true);
         }

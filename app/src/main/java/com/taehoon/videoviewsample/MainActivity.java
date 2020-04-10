@@ -1,13 +1,14 @@
 package com.taehoon.videoviewsample;
 
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.taehoon.videoplayerview.ExoPlayer.VideoView;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.taehoon.videoplayerview.ExoPlayer.VideoView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -20,6 +21,8 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("TAG", "Main Activity : onCreate");
         mVideoView = findViewById(R.id.vv_main);
+        Uri videoUri = Uri.parse("https://www.youtube.com/watch?v=OEvEPF72NIY");
+//        mVideoView.loadMediaFromUri(videoUri);
         mVideoView.loadMedia(R.raw.wolf);
     }
 

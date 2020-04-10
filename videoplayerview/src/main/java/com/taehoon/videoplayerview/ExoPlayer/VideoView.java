@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
@@ -17,10 +18,6 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import androidx.annotation.ColorInt;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
-
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.taehoon.videoplayerview.R;
 
@@ -30,6 +27,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+
+import androidx.annotation.ColorInt;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 
 @SuppressWarnings("ALL")
 public class VideoView extends ConstraintLayout
@@ -316,6 +317,10 @@ public class VideoView extends ConstraintLayout
 
     public void loadMedia(int resId) {
         mMediaPlayerHolder.loadMedia(resId);
+    }
+
+    public void loadMediaFromUri(Uri uri) {
+        mMediaPlayerHolder.loadMediaFromUri(uri);
     }
 
     public void releaseMedia() {
